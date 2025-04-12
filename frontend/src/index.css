@@ -1,0 +1,40 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: light --default, black --prefersdark;
+}
+[data-theme="black"] {
+  .btn-primary {
+    background-color: rgba(29, 161, 242, 1);
+    color: white;
+    border-radius: 20px;
+  }
+  .btn-primary:hover {
+    background-color: white;
+    color: rgba(29, 161, 242, 1);
+    border-radius: 20px;
+  }
+
+  .btn-secondary {
+    background-color: black;
+    color: rgba(29, 161, 242, 1);
+    border: 1px solid white;
+    border-radius: 20px;
+  }
+  .btn-secondary:hover {
+    background-color: white;
+    color: rgba(29, 161, 242, 1);
+    border: 1px solid black;
+    border-radius: 20px;
+  }
+  .bg-primary {
+    background-color: rgba(29, 161, 242, 1);
+    color: white;
+    border-radius: 20px;
+  }
+  .bg-secondary {
+    background-color: red;
+    color: rgba(29, 161, 242, 1);
+    border: 1px solid white;
+    border-radius: 20px;
+  }
+}
