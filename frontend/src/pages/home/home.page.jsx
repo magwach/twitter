@@ -7,8 +7,6 @@ import toast from "react-hot-toast";
 
 const HomePage = () => {
   const [feedType, setFeedType] = useState("forYou");
-  useQuery({ queryKey: ["authUser"] });
-
   const { data: postsData, isLoading } = useQuery({
     queryKey: ["allPosts"],
     queryFn: async () => {
@@ -31,8 +29,6 @@ const HomePage = () => {
     },
     retry: false,
   });
-
-
 
   return (
     <>

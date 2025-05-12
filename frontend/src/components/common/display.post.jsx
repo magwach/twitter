@@ -1,16 +1,20 @@
 import { FaRegComment } from "react-icons/fa";
 import { BiRepost } from "react-icons/bi";
 import { FaRegHeart } from "react-icons/fa";
+import { FaHeart } from "react-icons/fa";
 import { FaRegBookmark } from "react-icons/fa6";
 import { FaTrash } from "react-icons/fa";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import timeAgo from "../utils/date.converter.js";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import ShowImage from "./show.image.jsx";
+import toast from "react-hot-toast";
+import authQuery from "../utils/authQuery.js";
 
 const Post = ({ post }) => {
-  const { data: loggedUser } = useQuery({ queryKey: ["authUser"] });
+  const { data: loggedUser } = authQuery();
+  const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [imgSrc, setImgSrc] = useState("");
@@ -25,14 +29,43 @@ const Post = ({ post }) => {
 
   const isCommenting = false;
 
+  const { mutate: likePost } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/post/like/${post._id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (res.status === 500) {
+          throw new Error("Server Error!!");
+        }
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.message || data.error);
+        }
+        return data;
+      } catch (error) {
+        toast.error(error.message || "Something went wrong");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["allPosts"] });
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+    },
+  });
+
   const handleDeletePost = () => {};
 
   const handlePostComment = (e) => {
     e.preventDefault();
+    console.log(post._id);
   };
 
-  const handleLikePost = () => {};
-  console.log(post);
+  const handleLikePost = () => {
+    likePost();
+  };
 
   const handleClick = () => {
     setImgSrc(post.img);
@@ -172,15 +205,15 @@ const Post = ({ post }) => {
                 onClick={handleLikePost}
               >
                 {!isLiked && (
-                  <FaRegHeart className="w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500" />
+                  <FaRegHeart className="w-4 h-4 cursor-pointer text-slate-500 group-hover:text-red-500" />
                 )}
                 {isLiked && (
-                  <FaRegHeart className="w-4 h-4 cursor-pointer text-pink-500 " />
+                  <FaHeart className="w-4 h-4 cursor-pointer text-red-500 " />
                 )}
 
                 <span
-                  className={`text-sm text-slate-500 group-hover:text-pink-500 ${
-                    isLiked ? "text-pink-500" : ""
+                  className={`text-sm text-slate-500 group-hover:text-red-500 ${
+                    isLiked ? "text-red-500" : ""
                   }`}
                 >
                   {post.likes.length}

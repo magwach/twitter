@@ -105,7 +105,7 @@ export async function likeUnlikePost(req, res) {
     const userId = req.user._id;
     let post = await Post.findById(id);
     if (!post) {
-      return res.status(404).json({ error: "Post not found" });
+      return res.status(404).json({success: false, error: "Post not found" });
     }
     const isLiked = post.likes.includes(userId);
     if (isLiked) {
@@ -118,7 +118,7 @@ export async function likeUnlikePost(req, res) {
       );
       await user.save();
       await post.save();
-      return res.status(200).json({ message: "Post unliked successfully" });
+      return res.status(200).json({ success: true, message: "Post unliked successfully" });
     } else {
       const notification = new Notification({
         from: userId,
@@ -131,7 +131,7 @@ export async function likeUnlikePost(req, res) {
       await notification.save();
       post.likes.push(userId);
       await post.save();
-      return res.status(200).json({ message: "Post liked successfully" });
+      return res.status(200).json({success: true, message: "Post liked successfully" });
     }
   } catch (error) {
     console.error("Error in likeUnlikePost " + error.message);

@@ -23,7 +23,11 @@ const CreatePost = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Post created successfully");
+    try {
+      
+    } catch (e) {
+      
+    }
   };
 
   const handleImgChange = (e) => {
