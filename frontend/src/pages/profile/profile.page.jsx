@@ -66,6 +66,25 @@ const ProfilePage = () => {
     retry: false,
   });
 
+  const { data: likedPosts, isLoading: likedPostsLoading } = useQuery({
+    queryKey: ["likedPosts"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/post/liked");
+        if (res.status === 500) throw new Error("Server Error!!");
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message);
+        return data;
+      } catch (error) {
+        toast.error(
+          error.message || "Something went wrong while fetching posts"
+        );
+        throw error;
+      }
+    },
+  });
+  console.log(likedPosts, username);
+
   const { data: loggedUser } = useQuery({ queryKey: ["authUser"] });
   const { userId: userToFollowUnfolllow, profileLoading } =
     getProfile(username);
@@ -297,9 +316,7 @@ const ProfilePage = () => {
               onClick={() => setFeedType("likes")}
             >
               Likes
-              {feedType === "likes" && (
-                <div className="absolute bottom-0 w-10 h-1 rounded-full bg-primary" />
-              )}
+              {feedType === "likes" && <></>}
             </div>
           </div>
 

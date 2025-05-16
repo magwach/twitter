@@ -11,7 +11,7 @@ import authQuery from "../utils/authQuery.js";
 const Sidebar = () => {
   const queryClient = useQueryClient();
 
-  const data = authQuery();
+  const { data } = authQuery();
   let userData = data.data;
 
   const { mutate: signOut } = useMutation({
@@ -44,6 +44,7 @@ const Sidebar = () => {
       window.location.href = "/login";
     }, 1000);
   };
+
 
   return (
     <div className="fixed bottom-0 left-0 w-full md:relative md:w-52 md:max-w-52 md:flex-[2_2_0%] bg-black/20 md:opacity-100 backdrop-blur-sm ">
@@ -102,13 +103,13 @@ const Sidebar = () => {
               to={`/profile/${userData.userName}`}
               className="flex items-start gap-3 hover:bg-stone-900 rounded-full"
             >
-              <div className="avatar inline-flex">
+              <div className="avatar inline-flex ">
                 <div className="w-8 rounded-full">
                   <img src={userData?.profileImg || "/default-profile.jpg"} />
                 </div>
               </div>
               <div className="flex flex-col justify-start text-left">
-                <p className="text-white font-bold text-sm w-20 truncate">
+                <p className="text-white font-bold text-sm w-20 truncate ">
                   {userData?.fullName}
                 </p>
                 <p className="text-slate-500 text-sm">@{userData?.userName}</p>

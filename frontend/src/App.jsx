@@ -1,5 +1,5 @@
 import "./App.css";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import HomePage from "./pages/home/home.page.jsx";
 import LoginPage from "./pages/auth/login/login.page.jsx";
 import SignUpPage from "./pages/auth/signup/signup.page.jsx";
@@ -9,16 +9,22 @@ import NotificationPage from "./pages/notification/notification.page.jsx";
 import ProfilePage from "./pages/profile/profile.page.jsx";
 import toast, { Toaster } from "react-hot-toast";
 import { CgDanger } from "react-icons/cg";
-import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import LoadingSpinner from "./components/common/loading.spinner.jsx";
+import { useEffect } from "react";
 
 function App() {
   const location = useLocation();
+  const navigate = useNavigate();
+
   const hidePanels =
     location.pathname === "/login" || location.pathname === "/signup";
 
-  const { data: AuthenticatedUser, isLoading, isError } = useQuery({
+  const {
+    data: AuthenticatedUser,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["authUser"],
     enabled: !hidePanels,
     queryFn: async () => {
@@ -33,33 +39,29 @@ function App() {
         }
         return data;
       } catch (error) {
-        toast.error(error.message || "Something went wrong");
-        throw error
+        throw error;
       }
     },
     retry: false,
   });
+  console.log(AuthenticatedUser, isError, isLoading);
 
+  if (isError && !hidePanels) {
+    toast.error("Session expired, please login again", {
+      icon: <CgDanger />,
+    });
+    navigate("/login");
+  }
 
-  return isLoading ? (
-    <div className="flex items-center justify-center w-screen h-screen z-50">
-      <LoadingSpinner />
-    </div>
-  ) : isError ? (
-    <div className="flex flex-col items-center justify-center w-screen h-screen z-50">
-      <CgDanger size={30} />
-      <p>You are not authenticated</p>
-      <p>
-        <a
-          href="/login"
-          onClick={() => (window.location.href = "/login")}
-          className="text-[rgb(29,161,242)]"
-        >
-          Please Login
-        </a>
-      </p>
-    </div>
-  ) : (
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center w-screen h-screen z-50">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  return (
     <div className="container flex max-w-6xl mx-auto">
       {!hidePanels && <Sidebar />}
       <Routes>

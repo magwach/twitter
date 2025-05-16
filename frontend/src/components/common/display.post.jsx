@@ -4,7 +4,9 @@ import { FaRegHeart } from "react-icons/fa";
 import { FaHeart } from "react-icons/fa";
 import { FaRegBookmark } from "react-icons/fa6";
 import { FaTrash } from "react-icons/fa";
-import { useState } from "react";
+import { BsEmojiSmileFill } from "react-icons/bs";
+import EmojiPicker from "emoji-picker-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import timeAgo from "../utils/date.converter.js";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +20,8 @@ const Post = ({ post }) => {
   const [comment, setComment] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [imgSrc, setImgSrc] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   const loggedUserName = loggedUser?.data?.userName;
   const postOwner = post.owner;
@@ -27,7 +31,10 @@ const Post = ({ post }) => {
 
   const formattedDate = timeAgo(post?.createdAt);
 
-  const isCommenting = false;
+  const onEmojiClick = (emojiObject) => {
+    const emoji = emojiObject.emoji;
+    setComment((prevComment) => prevComment + emoji);
+  };
 
   const { mutate: likePost } = useMutation({
     mutationFn: async () => {
@@ -56,11 +63,43 @@ const Post = ({ post }) => {
     },
   });
 
+  const { mutate: addComment, isPending: isCommenting } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/post/comment/${post._id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: comment,
+          }),
+        });
+        if (res.status === 500) {
+          throw new Error("Server Error!!");
+        }
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.message || data.error);
+        }
+        return data;
+      } catch (error) {
+        toast.error(error.message || "Something went wrong");
+      }
+    },
+    onSuccess: async () => {
+      if (!comment) return;
+      toast.success("Comment added succesfully");
+      setComment("");
+      queryClient.invalidateQueries({ queryKey: ["allPosts"] });
+    },
+  });
+
   const handleDeletePost = () => {};
 
   const handlePostComment = (e) => {
     e.preventDefault();
-    console.log(post._id);
+    !isCommenting && addComment();
   };
 
   const handleLikePost = () => {
@@ -71,6 +110,15 @@ const Post = ({ post }) => {
     setImgSrc(post.img);
     setShowModal(true);
   };
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <>
@@ -147,16 +195,19 @@ const Post = ({ post }) => {
                     )}
                     {post.comments.map((comment) => (
                       <div key={comment._id} className="flex gap-2 items-start">
-                        <div className="avatar">
-                          <div className="w-8 rounded-full">
-                            <img
-                              src={
-                                comment?.user?.profileImg ||
-                                "/default-profile.jpg"
-                              }
-                            />
+                        <Link to={`/profile/${comment?.user?.userName}`}>
+                          <div className="avatar">
+                            <div className="w-8 rounded-full">
+                              <img
+                                src={
+                                  comment?.user?.profileImg ||
+                                  "/default-profile.jpg"
+                                }
+                              />
+                            </div>
                           </div>
-                        </div>
+                        </Link>
+
                         <div className="flex flex-col">
                           <div className="flex items-center gap-1">
                             <span className="font-bold">
@@ -173,7 +224,7 @@ const Post = ({ post }) => {
                   </div>
                   <form
                     className="flex gap-2 items-center mt-4 border-t border-gray-600 pt-2"
-                    onSubmit={handlePostComment}
+                    onSubmit={(e) => handlePostComment(e)}
                   >
                     <textarea
                       className="textarea w-full p-1 rounded text-md resize-none border focus:outline-none  border-gray-800"
@@ -181,15 +232,30 @@ const Post = ({ post }) => {
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
                     />
-                    <button className="btn btn-primary rounded-full btn-sm text-white px-4">
-                      {isCommenting ? (
-                        <span className="loading loading-spinner loading-md"></span>
-                      ) : (
-                        "Post"
-                      )}
-                    </button>
+                    <div className="flex flex-col align-middle justify-center gap-2">
+                      <BsEmojiSmileFill
+                        className={`${
+                          showEmojiPicker ? "fill-amber-300" : "fill-primary"
+                        } w-7 h-7 cursor-pointer self-center `}
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      />
+                      <button className="btn btn-primary rounded-full btn-sm text-white px-4">
+                        {isCommenting ? "Posting..." : "Post"}
+                      </button>
+                    </div>
                   </form>
+                  {showEmojiPicker && (
+                    <div className="z-10 self-center">
+                      <EmojiPicker
+                        onEmojiClick={onEmojiClick}
+                        width={windowWidth < 768 ? "100%" : "350px"}
+                        height={windowWidth < 768 ? "300px" : "400px"}
+                        previewConfig={{ showPreview: windowWidth >= 640 }}
+                      />
+                    </div>
+                  )}
                 </div>
+
                 <form method="dialog" className="modal-backdrop">
                   <button className="outline-none">close</button>
                 </form>
