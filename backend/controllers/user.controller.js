@@ -75,28 +75,24 @@ export async function followUnfollowUser(req, res) {
 export async function getSuggestedUser(req, res) {
   try {
     const userId = req.user._id;
-    const followedUsers = await User.findById(userId).select("following");
+    const user = await User.findById(userId).select("following");
 
     const users = await User.aggregate([
       {
-        $match: { _id: { $ne: userId } },
+        $match: {
+          _id: {
+            $nin: [userId, ...user.following.map((id) => id)],
+          },
+        },
       },
-      {
-        $sample: { size: 5 },
-      },
-      {
-        $project: { password: 0 },
-      },
+      { $sample: { size: 5 } },
+      { $project: { password: 0 } },
     ]);
 
-    const filteredUsers = users.filter(
-      (user) => !followedUsers.following.includes(user._id)
-    );
-
-    res.status(200).json({success: true, data: filteredUsers });
+    res.status(200).json({ success: true, data: users });
   } catch (e) {
-    console.error("Error in getSuggestedUser " + e);
-    return res.status(500).json({ error: "Server Error" });
+    console.error("Error in getSuggestedUser:", e);
+    res.status(500).json({ error: "Server Error" });
   }
 }
 

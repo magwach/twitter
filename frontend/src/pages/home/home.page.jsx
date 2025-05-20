@@ -50,7 +50,7 @@ const HomePage = () => {
   });
   return (
     <>
-      <div className="flex-[4_4_0] mr-auto border-r border-gray-700 min-h-screen w-full mb-12">
+      <div className="flex-[4_4_0] mr-auto border-r border-gray-700 min-h-screen w-full mb-12 md:mb-0">
         <div className="flex w-full border-b border-gray-700">
           <div
             className={

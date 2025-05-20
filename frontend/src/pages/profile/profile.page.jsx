@@ -30,7 +30,7 @@ const ProfilePage = () => {
   const profileImgRef = useRef(null);
 
   const { data: userData, isLoading } = useQuery({
-    queryKey: ["userProfile"],
+    queryKey: ["userProfile", username],
     queryFn: async () => {
       try {
         const res = await fetch(`/api/users/profile/${username}`);
@@ -121,6 +121,7 @@ const ProfilePage = () => {
       onSuccess: () => {
         setIsFollowing((prev) => !prev);
         queryClient.invalidateQueries(["userProfile"]);
+        queryClient.invalidateQueries(["suggestions"]);
       },
     });
 
@@ -151,7 +152,7 @@ const ProfilePage = () => {
     year: "numeric",
   });
   return (
-    <div className="flex-[4_4_0] border-r border-gray-700 min-h-screen mb-12">
+    <div className="flex-[4_4_0] border-r border-gray-700 min-h-screen mb-12 md:mb-0">
       {isLoading && <ProfileHeaderSkeleton />}
 
       {!isLoading && !userProfile && (

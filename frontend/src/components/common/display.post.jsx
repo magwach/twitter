@@ -58,8 +58,10 @@ const Post = ({ post }) => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["allPosts"] });
+      queryClient.invalidateQueries({ queryKey: ["`allPosts`"] });
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      queryClient.invalidateQueries({ queryKey: ["likedPosts"] });
+      queryClient.invalidateQueries({ queryKey: ["myPosts"] });
     },
   });
 
