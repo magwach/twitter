@@ -44,7 +44,6 @@ function App() {
     },
     retry: false,
   });
-  console.log(AuthenticatedUser, isError, isLoading);
 
   if (isError && !hidePanels) {
     toast.error("Session expired, please login again", {

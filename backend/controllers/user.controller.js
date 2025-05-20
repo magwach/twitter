@@ -82,7 +82,7 @@ export async function getSuggestedUser(req, res) {
         $match: { _id: { $ne: userId } },
       },
       {
-        $sample: { size: 10 },
+        $sample: { size: 5 },
       },
       {
         $project: { password: 0 },
@@ -93,7 +93,7 @@ export async function getSuggestedUser(req, res) {
       (user) => !followedUsers.following.includes(user._id)
     );
 
-    res.status(200).json(filteredUsers);
+    res.status(200).json({success: true, data: filteredUsers });
   } catch (e) {
     console.error("Error in getSuggestedUser " + e);
     return res.status(500).json({ error: "Server Error" });

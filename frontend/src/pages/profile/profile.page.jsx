@@ -14,7 +14,8 @@ import ProfileHeaderSkeleton from "../../components/skeletons/profile.header.ske
 import EditProfile from "./edit.profile.jsx";
 import FetchingSpinner from "../../components/common/fetching.spinner.jsx";
 
-import getProfile from "../../components/common/get.profile.jsx";
+import getProfile from "../../components/hooks/get.profile.jsx";
+import getLoggedUser from "../../components/hooks/get.looged.user.jsx";
 
 const ProfilePage = () => {
   const { username } = useParams();
@@ -65,12 +66,11 @@ const ProfilePage = () => {
     },
     retry: false,
   });
-
   const { data: likedPosts, isLoading: likedPostsLoading } = useQuery({
     queryKey: ["likedPosts"],
     queryFn: async () => {
       try {
-        const res = await fetch("/api/post/liked");
+        const res = await fetch("/api/post/posts/liked");
         if (res.status === 500) throw new Error("Server Error!!");
         const data = await res.json();
         if (!data.success) throw new Error(data.message);
@@ -83,9 +83,8 @@ const ProfilePage = () => {
       }
     },
   });
-  console.log(likedPosts, username);
 
-  const { data: loggedUser } = useQuery({ queryKey: ["authUser"] });
+  const { data: loggedUser } = getLoggedUser();
   const { userId: userToFollowUnfolllow, profileLoading } =
     getProfile(username);
 
@@ -151,9 +150,8 @@ const ProfilePage = () => {
     month: "long",
     year: "numeric",
   });
-
   return (
-    <div className="flex-[4_4_0] border-r border-gray-700 min-h-screen">
+    <div className="flex-[4_4_0] border-r border-gray-700 min-h-screen mb-12">
       {isLoading && <ProfileHeaderSkeleton />}
 
       {!isLoading && !userProfile && (
@@ -173,7 +171,6 @@ const ProfilePage = () => {
               </span>
             </div>
           </div>
-
           <div className="relative group/cover">
             <img
               src={coverImg || userProfile?.coverImg || "/cover.png"}
@@ -224,7 +221,6 @@ const ProfilePage = () => {
               </div>
             </div>
           </div>
-
           <div className="flex justify-end px-4 mt-5">
             {isMyProfile ? (
               <EditProfile />
@@ -251,7 +247,6 @@ const ProfilePage = () => {
               </button>
             )}
           </div>
-
           <div className="flex flex-col gap-4 mt-14 px-4">
             <div className="flex flex-col">
               <span className="font-bold text-lg">{userProfile?.fullName}</span>
@@ -296,12 +291,9 @@ const ProfilePage = () => {
               </div>
             </div>
           </div>
-
           <div className="flex w-full border-b border-gray-700 mt-4">
             <div
-              className={`flex justify-center flex-1 p-3 hover:bg-secondary transition duration-300 relative cursor-pointer ${
-                feedType === "posts" ? "" : "text-slate-500"
-              }`}
+              className="flex justify-center flex-1 p-3 hover:bg-secondary transition duration-300 relative cursor-pointer"
               onClick={() => setFeedType("posts")}
             >
               Posts
@@ -310,18 +302,23 @@ const ProfilePage = () => {
               )}
             </div>
             <div
-              className={`flex justify-center flex-1 p-3 hover:bg-secondary transition duration-300 relative cursor-pointer ${
-                feedType === "likes" ? "" : "text-slate-500"
-              }`}
+              className="flex justify-center flex-1 p-3 text-slate-500 hover:bg-secondary transition duration-300 relative cursor-pointer"
               onClick={() => setFeedType("likes")}
             >
               Likes
-              {feedType === "likes" && <></>}
+              {feedType === "likes" && (
+                <div className="absolute bottom-0 w-10  h-1 rounded-full bg-primary" />
+              )}
             </div>
           </div>
-
           {feedType === "posts" && (
             <Posts posts={myPosts?.data} isLoading={postLoading} />
+          )}
+          {feedType === "likes" && (
+            <Posts
+              posts={likedPosts?.data?.likedPosts}
+              isLoading={likedPostsLoading}
+            />
           )}
         </div>
       )}

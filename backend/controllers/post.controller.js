@@ -47,7 +47,6 @@ export async function deletePost(req, res) {
       return res.status(404).json({ message: "Post not found" });
     }
     if (post._id.toString() !== id) {
-      console.log(post._id, id);
       return res
         .status(400)
         .json({ error: "You aren't authorized to delete this post" });
@@ -168,7 +167,7 @@ export async function getlikedPosts(req, res) {
     const userId = req.user._id;
     let user = await User.findById(userId);
     if (!user) {
-      return res.status(400).json({ error: "User not found" });
+      return res.status(400).json({ error: "User not found here" });
     }
     let likedPosts = user.likedPosts;
     if (!likedPosts) {
@@ -187,7 +186,7 @@ export async function getlikedPosts(req, res) {
           select: "-password",
         },
       });
-    return res.status(200).json(likedPosts);
+    return res.status(200).json({ success: true, data: likedPosts });
   } catch (error) {
     console.error("Error in getlikedPosts " + error.message);
     return res.status(500).json({ error: "Server Error" });
@@ -202,17 +201,11 @@ export async function getAllFollowingPosts(req, res) {
       return res.status(400).json({ error: "User not found" });
     }
     let following = user.following;
-    if (following.length === 0) {
-      return res.status(200).json({ message: "You are not following anyone" });
-    }
     const posts = await Post.find({ owner: { $in: following } })
       .sort({ createdAt: -1 })
       .populate({ path: "owner", select: "-password" })
       .populate({ path: "comments.user", select: "-password" });
-    if (posts.length === 0) {
-      return res.status(200).json({ message: "No posts found" });
-    }
-    return res.status(200).json(posts);
+    return res.status(200).json({ success: true, data: posts });
   } catch (error) {
     console.error("Error in getAllFollowingPosts " + error.message);
     return res.status(500).json({ error: "Server Error" });
@@ -222,14 +215,13 @@ export async function getAllFollowingPosts(req, res) {
 export async function getMyPosts(req, res) {
   try {
     const { username } = req.params;
-    console.log(username)
-    let user = await User.find({ userName: username });
+    let user = await User.findOne({ userName: username });
     if (!user) {
       return res
         .status(400)
         .json({ success: false, message: "User not found" });
     }
-    const posts = await Post.find({ owner: user[0]._id })
+    const posts = await Post.find({ owner: user._id })
       .sort({ createdAt: -1 })
       .populate({ path: "owner", select: "-password" })
       .populate({ path: "comments.user", select: "-password" });

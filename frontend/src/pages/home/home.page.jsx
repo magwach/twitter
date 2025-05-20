@@ -29,7 +29,25 @@ const HomePage = () => {
     },
     retry: false,
   });
-
+  const { data: followingPostsData, followingIsLoading } = useQuery({
+    queryKey: ["followingPosts"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/post/posts/following");
+        if (res.status === 500) {
+          throw new Error("Server Error!!");
+        }
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.message);
+        }
+        return data;
+      } catch (error) {
+        throw error;
+      }
+    },
+    retry: false,
+  });
   return (
     <>
       <div className="flex-[4_4_0] mr-auto border-r border-gray-700 min-h-screen w-full mb-12">
@@ -56,9 +74,19 @@ const HomePage = () => {
           </div>
         </div>
 
-        <CreatePost />
-
-        <Posts posts={postsData?.data} isLoading={isLoading} />
+        {feedType === "forYou" && (
+          <>
+            <CreatePost />
+            <Posts posts={postsData?.data} isLoading={isLoading} />
+          </>
+        )}
+        {feedType === "following" && (
+          <Posts
+            feedType={"following"}
+            posts={followingPostsData?.data}
+            isLoading={followingIsLoading}
+          />
+        )}
       </div>
     </>
   );

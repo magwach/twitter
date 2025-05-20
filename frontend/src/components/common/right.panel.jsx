@@ -1,27 +1,73 @@
 import { Link } from "react-router-dom";
 import RightPanelSkeleton from "../skeletons/right.panel.skeleton.jsx";
-import { USERS_FOR_RIGHT_PANEL } from "../../utils/db/dummy.js";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import LoadingSpinner from "./loading.spinner.jsx";
+import { useQueryClient } from "@tanstack/react-query";
 
 const RightPanel = () => {
-  const isLoading = false;
+  const queryClient = useQueryClient();
 
+  const { data: USERS_FOR_RIGHT_PANEL, isLoading } = useQuery({
+    queryKey: ["suggestions"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/users/suggested");
+        if (res.status === 500) {
+          throw new Error("Server Error!!");
+        }
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.message || data.error);
+        }
+        return data?.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+  });
+
+  const { mutate: followUnfollowUser, isPending: followingUnfollowPending } =
+    useMutation({
+      mutationFn: async (userToFollowUnfolllow) => {
+        try {
+          const res = await fetch(
+            `/api/users/follow/${userToFollowUnfolllow}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+          if (res.status === 500) throw new Error("Server Error!!");
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message || data.error);
+          toast.success(data.message);
+          return data;
+        } catch (error) {
+          toast.error(error.message || "Something went wrong");
+          throw error;
+        }
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries(["suggestions"]);
+      },
+    });
+
+  const displaySkeletons = () => {
+    return Array(USERS_FOR_RIGHT_PANEL?.length + 1 || 3).map((_, index) => (
+      <RightPanelSkeleton key={index} />
+    ));
+  };
+  console.log(USERS_FOR_RIGHT_PANEL);
   return (
     <div className="hidden lg:block my-4 mx-2">
       <div className="bg-[#16181C] p-4 rounded-md sticky top-2">
         <p className="font-bold">Who to follow</p>
         <div className="flex flex-col gap-4">
-          {isLoading && (
-            <>
-              <RightPanelSkeleton />
-              <RightPanelSkeleton />
-              <RightPanelSkeleton />
-              <RightPanelSkeleton />
-            </>
-          )}
+          {isLoading && displaySkeletons()}
           {!isLoading &&
             USERS_FOR_RIGHT_PANEL?.map((user) => (
               <Link
-                to={`/profile/${user.username}`}
+                to={`/profile/${user.userName}`}
                 className="flex items-center justify-between gap-4"
                 key={user._id}
               >
@@ -36,16 +82,18 @@ const RightPanel = () => {
                       {user.fullName}
                     </span>
                     <span className="text-sm text-slate-500">
-                      @{user.username}
+                      @{user.userName}
                     </span>
                   </div>
                 </div>
                 <div>
                   <button
                     className="btn bg-white text-black hover:bg-white hover:opacity-90 rounded-full btn-sm"
-                    onClick={(e) => e.preventDefault()}
+                    onClick={() => {
+                      followUnfollowUser(user._id);
+                    }}
                   >
-                    Follow
+                    {followingUnfollowPending ? <LoadingSpinner /> : "Follow"}
                   </button>
                 </div>
               </Link>
