@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useQueryClient } from "@tanstack/react-query";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import toast from "react-hot-toast";
 
@@ -10,8 +10,8 @@ import { IoCalendarOutline } from "react-icons/io5";
 import { MdEdit } from "react-icons/md";
 
 import Posts from "../../components/common/posts.jsx";
-import ProfileHeaderSkeleton from "../../components/skeletons/profile.header.skeleton.jsx";
 import EditProfile from "./edit.profile.jsx";
+import ProfileHeaderSkeleton from "../../components/skeletons/profile.header.skeleton.jsx";
 import FetchingSpinner from "../../components/common/fetching.spinner.jsx";
 
 import getProfile from "../../components/hooks/get.profile.jsx";
@@ -66,6 +66,7 @@ const ProfilePage = () => {
     },
     retry: false,
   });
+
   const { data: likedPosts, isLoading: likedPostsLoading } = useQuery({
     queryKey: ["likedPosts"],
     queryFn: async () => {
@@ -90,12 +91,6 @@ const ProfilePage = () => {
 
   const userProfile = userData?.data;
   const isMyProfile = username === loggedUser?.data?.userName;
-
-  useEffect(() => {
-    if (loggedUser?.data?.following?.includes(userToFollowUnfolllow)) {
-      setIsFollowing(true);
-    }
-  }, [loggedUser, userToFollowUnfolllow]);
 
   const { mutate: followUnfollowUser, isPending: followingUnfollowPending } =
     useMutation({
@@ -125,6 +120,49 @@ const ProfilePage = () => {
       },
     });
 
+  const { mutate: updatePictures, isPending } = useMutation({
+    mutationKey: ["updatePictures"],
+    mutationFn: async () => {
+      try {
+        const res = await fetch("/api/users/update", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ coverImg, profileImg }),
+        });
+        if (res.status === 500) {
+          throw new Error("Server Error!!");
+        }
+        if (res.status === 413) {
+          throw new Error("Image size is too large.");
+        }
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.message || data.error);
+        }
+        return data;
+      } catch (error) {
+        throw error;
+      }
+    },
+    onMutate: () => {
+      toast.loading("Uploading...", { id: "updateToast" });
+    },
+    onSuccess: () => {
+      toast.success("Profile updated successfully!");
+      setCoverImg(null);
+      setProfileImg(null);
+      queryClient.invalidateQueries({ queryKey: ["userProfile", username] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update profile");
+    },
+    onSettled: () => {
+      toast.dismiss("updateToast");
+    },
+  });
+
   const handleImgChange = (e, state) => {
     const file = e.target.files[0];
     if (file) {
@@ -151,6 +189,13 @@ const ProfilePage = () => {
     month: "long",
     year: "numeric",
   });
+
+  useEffect(() => {
+    if (loggedUser?.data?.following?.includes(userToFollowUnfolllow)) {
+      setIsFollowing(true);
+    }
+  }, [loggedUser, userToFollowUnfolllow]);
+
   return (
     <div className="flex-[4_4_0] border-r border-gray-700 min-h-screen mb-12 md:mb-0">
       {isLoading && <ProfileHeaderSkeleton />}
@@ -172,6 +217,7 @@ const ProfilePage = () => {
               </span>
             </div>
           </div>
+
           <div className="relative group/cover">
             <img
               src={coverImg || userProfile?.coverImg || "/cover.png"}
@@ -222,6 +268,7 @@ const ProfilePage = () => {
               </div>
             </div>
           </div>
+
           <div className="flex justify-end px-4 mt-5">
             {isMyProfile ? (
               <EditProfile />
@@ -239,15 +286,18 @@ const ProfilePage = () => {
                 )}
               </button>
             )}
+
             {(coverImg || profileImg) && (
               <button
                 className="btn btn-primary rounded-full btn-sm text-white px-4 ml-2"
-                onClick={() => toast.success("Followed successfully")}
+                onClick={() => updatePictures()}
+                disabled={isPending}
               >
                 Update
               </button>
             )}
           </div>
+
           <div className="flex flex-col gap-4 mt-14 px-4">
             <div className="flex flex-col">
               <span className="font-bold text-lg">{userProfile?.fullName}</span>
@@ -292,6 +342,7 @@ const ProfilePage = () => {
               </div>
             </div>
           </div>
+
           <div className="flex w-full border-b border-gray-700 mt-4">
             <div
               className="flex justify-center flex-1 p-3 hover:bg-secondary transition duration-300 relative cursor-pointer"
@@ -308,19 +359,17 @@ const ProfilePage = () => {
             >
               Likes
               {feedType === "likes" && (
-                <div className="absolute bottom-0 w-10  h-1 rounded-full bg-primary" />
+                <div className="absolute bottom-0 w-10 h-1 rounded-full bg-primary" />
               )}
             </div>
           </div>
-          {feedType === "posts" && (
-            <Posts posts={myPosts?.data} isLoading={postLoading} />
-          )}
-          {feedType === "likes" && (
+
+          <div>
             <Posts
-              posts={likedPosts?.data?.likedPosts}
-              isLoading={likedPostsLoading}
+              posts={feedType === "posts" ? myPosts?.data : likedPosts?.data}
+              loading={postLoading || likedPostsLoading}
             />
-          )}
+          </div>
         </div>
       )}
     </div>

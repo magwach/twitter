@@ -32,7 +32,7 @@ export async function createPost(req, res) {
       img: img,
     });
     const savedPost = await newPost.save();
-    res.status(200).json(savedPost);
+    res.status(200).json({ success: true, data: savedPost });
   } catch (e) {
     console.error("Error in createPost " + e);
     res.status(500).json({ error: "Server Error" });
@@ -59,7 +59,9 @@ export async function deletePost(req, res) {
     }
 
     await Post.findByIdAndDelete(id);
-    return res.status(200).json({ message: "Post deleted successfully" });
+    return res
+      .status(200)
+      .json({ success: true, message: "Post deleted successfully" });
   } catch (e) {
     console.error("Error in deletePost " + e.message);
     res.status(500).json({ error: "Server Error" });
@@ -104,6 +106,7 @@ export async function likeUnlikePost(req, res) {
   try {
     const id = req.params.id;
     const userId = req.user._id;
+    console.log("Hiit");
     let post = await Post.findById(id);
     if (!post) {
       return res.status(404).json({ success: false, error: "Post not found" });
@@ -119,9 +122,11 @@ export async function likeUnlikePost(req, res) {
       );
       await user.save();
       await post.save();
-      return res
-        .status(200)
-        .json({ success: true, message: "Post unliked successfully" });
+      return res.status(200).json({
+        success: true,
+        message: "Post unliked successfully",
+        data: post.likes,
+      });
     } else {
       const notification = new Notification({
         from: userId,
@@ -134,9 +139,11 @@ export async function likeUnlikePost(req, res) {
       await notification.save();
       post.likes.push(userId);
       await post.save();
-      return res
-        .status(200)
-        .json({ success: true, message: "Post liked successfully" });
+      return res.status(200).json({
+        success: true,
+        message: "Post liked successfully",
+        data: post.likes,
+      });
     }
   } catch (error) {
     console.error("Error in likeUnlikePost " + error.message);

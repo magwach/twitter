@@ -1,8 +1,11 @@
+import { useMutation } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 const EditProfile = () => {
   const [formData, setFormData] = useState({
-    fullName: "",
+    fullname: "",
     username: "",
     email: "",
     bio: "",
@@ -14,6 +17,58 @@ const EditProfile = () => {
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  const queryClient = useQueryClient();
+
+  const {
+    data,
+    mutate: updateProfile,
+    isPending,
+  } = useMutation({
+    mutationFn: async (formData) => {
+      const res = await fetch("/api/users/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (res.status === 500) {
+        throw new Error("Server Error!!");
+      }
+
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.message || data.error);
+      }
+
+      return data;
+    },
+
+    onMutate: () => {
+      toast.loading("Updating profile...", { id: "updateToast" });
+    },
+
+    onSuccess: () => {
+      toast.success("Profile updated successfully", { id: "updateToast" });
+      setFormData({
+        fullname: "",
+        username: "",
+        email: "",
+        bio: "",
+        link: "",
+        newPassword: "",
+        currentPassword: "",
+      });
+      queryClient.invalidateQueries(["userProfile"]);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update profile", {
+        id: "updateToast",
+      });
+    },
+  });
+
 
   return (
     <>
@@ -30,9 +85,11 @@ const EditProfile = () => {
           <h3 className="font-bold text-lg my-3">Update Profile</h3>
           <form
             className="flex flex-col gap-4"
+            autoComplete="off"
             onSubmit={(e) => {
               e.preventDefault();
-              alert("Profile updated successfully");
+              !isPending && updateProfile(formData);
+              document.getElementById("edit_profile_modal").close();
             }}
           >
             <div className="flex flex-wrap gap-2">
@@ -40,8 +97,8 @@ const EditProfile = () => {
                 type="text"
                 placeholder="Full Name"
                 className="flex-1 input border border-gray-700 rounded p-2 input-md"
-                value={formData.fullName}
-                name="fullName"
+                value={formData.fullname}
+                name="fullname"
                 onChange={handleInputChange}
                 autoComplete="off"
               />
@@ -103,7 +160,7 @@ const EditProfile = () => {
               autoComplete="off"
             />
             <button className="btn btn-primary rounded-full btn-sm text-white">
-              Update
+              {isPending ? "Updating..." : "Update Profile"}
             </button>
           </form>
         </div>

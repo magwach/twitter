@@ -36,6 +36,50 @@ const Post = ({ post }) => {
     setComment((prevComment) => prevComment + emoji);
   };
 
+  const { mutate: deletePost, isPending } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/post/delete/${post._id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (res.status === 500) {
+          throw new Error("Server Error!!");
+        }
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.message || data.error);
+        }
+        return data;
+      } catch (error) {
+        toast.error(error.message || "Something went wrong");
+      }
+    },
+    onMutate: () => {
+      toast.loading("Deleting post...", { id: "deletePost" });
+    },
+    onSuccess: () => {
+      toast.success("Post deleted successfully");
+      queryClient.setQueryData(["allPosts"], (oldData) => {
+        if (!oldData) return;
+
+        return {
+          ...oldData,
+          data: oldData.data.filter((p) => p._id !== post._id),
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete post");
+    },
+    onSettled: () => {
+      toast.dismiss("deletePost");
+    },
+  });
+
   const { mutate: likePost } = useMutation({
     mutationFn: async () => {
       try {
@@ -57,11 +101,34 @@ const Post = ({ post }) => {
         toast.error(error.message || "Something went wrong");
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["`allPosts`"] });
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
-      queryClient.invalidateQueries({ queryKey: ["likedPosts"] });
-      queryClient.invalidateQueries({ queryKey: ["myPosts"] });
+    onSuccess: (data) => {
+      const likes = data.data;
+      queryClient.setQueryData(["allPosts"], (oldData) => {
+        if (!oldData) return;
+
+        return {
+          ...oldData,
+          data: oldData.data.map((p) => {
+            if (p._id === post._id) {
+              return { ...p, likes: likes };
+            }
+            return p;
+          }),
+        };
+      });
+      queryClient.setQueryData(["authUser"], (oldData) => {
+        if (!oldData) return;
+
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            likedPosts: !isLiked
+              ? [...new Set([...oldData.data.likedPosts, post._id])]
+              : oldData.data.likedPosts.filter((id) => id !== post._id),
+          },
+        };
+      });
     },
   });
 
@@ -97,7 +164,9 @@ const Post = ({ post }) => {
     },
   });
 
-  const handleDeletePost = () => {};
+  const handleDeletePost = () => {
+    !isPending && deletePost();
+  };
 
   const handlePostComment = (e) => {
     e.preventDefault();

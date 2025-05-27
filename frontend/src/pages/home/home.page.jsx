@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import Posts from "../../components/common/posts.jsx";
 import CreatePost from "./create.post.jsx";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 const HomePage = () => {
@@ -11,7 +11,7 @@ const HomePage = () => {
     queryKey: ["allPosts"],
     queryFn: async () => {
       try {
-        const res = await fetch("/api/post/all");
+        const res = await fetch("/api/post/posts/all");
         if (res.status === 500) {
           throw new Error("Server Error!!");
         }
@@ -29,6 +29,7 @@ const HomePage = () => {
     },
     retry: false,
   });
+  console.log(postsData);
   const { data: followingPostsData, followingIsLoading } = useQuery({
     queryKey: ["followingPosts"],
     queryFn: async () => {
@@ -48,6 +49,7 @@ const HomePage = () => {
     },
     retry: false,
   });
+
   return (
     <>
       <div className="flex-[4_4_0] mr-auto border-r border-gray-700 min-h-screen w-full mb-12 md:mb-0">

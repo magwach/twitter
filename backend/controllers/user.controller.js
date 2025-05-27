@@ -158,14 +158,29 @@ export async function updateUserProfile(req, res) {
 
     if (email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
+      const userWithSameEmail = await User.findOne({
+        email: email.toLowerCase(),
+      });
+      if (userWithSameEmail) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Email already exists" });
+      }
       if (!emailRegex.test(email)) {
-        return res.status(400).json({ message: "Invalid email" });
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid email" });
       }
     }
 
     if (username) {
       username = username.toLowerCase();
+      let userWithSameUsername = await User.findOne({ userName: username });
+      if (userWithSameUsername) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Username already taken" });
+      }
     }
 
     user.fullName = fullname || user.fullName;
@@ -180,7 +195,7 @@ export async function updateUserProfile(req, res) {
 
     user.password = null;
 
-    return res.status(200).json(user);
+    return res.status(200).json({ data: user, success: true });
   } catch (e) {
     console.error("Error in updateUserProfile " + e);
     return res.status(500).json({ error: "Server Error" });

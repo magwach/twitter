@@ -95,7 +95,7 @@ const RightPanel = () => {
                       <div className="avatar">
                         <div className="w-8 rounded-full">
                           <img
-                            src={user.profileImg || "/avatar-placeholder.png"}
+                            src={user.profileImg || "/default-profile.jpg"}
                           />
                         </div>
                       </div>

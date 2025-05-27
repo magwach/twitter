@@ -5,12 +5,15 @@ import authRoute from "./routes/auth.routes.js";
 import userRoute from "./routes/user.routes.js";
 import postRoute from "./routes/post.routes.js";
 import mongoConnect from "./db/dbConnection.js";
+import notificationRoute from "./routes/notification.routes.js";
 import cookieParser from "cookie-parser";
 import { v2 as cloudinary } from "cloudinary";
-import notificationRoute from "./routes/notification.routes.js";
+import path from "path";
+
+const __dirname = path.resolve();
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(cookieParser());
@@ -29,6 +32,13 @@ app.use("/api/post", postRoute);
 app.use("/api/notifications", notificationRoute);
 
 const port = process.env.PORT || "5000";
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "frontend/dist")));
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "frontend/dist", "index.html"));
+  });
+}
 
 app.listen(port, () => {
   mongoConnect();

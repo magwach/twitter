@@ -100,7 +100,7 @@ const LoginPage = () => {
             />
           </label>
           <button className="btn rounded-full btn-primary text-white">
-            {isPending ? "Loading..." : "Login"}
+            {isPending ? "Verifying..." : "Login"}
           </button>
         </form>
         <div className="flex flex-col gap-2 mt-4">

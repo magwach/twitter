@@ -4,26 +4,70 @@ import { useEffect, useRef, useState } from "react";
 import { IoCloseSharp } from "react-icons/io5";
 import toast from "react-hot-toast";
 import EmojiPicker from "emoji-picker-react";
+import getLoggedUser from "../../components/hooks/get.looged.user";
+import { useMutation } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 const CreatePost = () => {
   const [text, setText] = useState("");
   const [img, setImg] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  
+
+  const queryClient = useQueryClient();
 
   const imgRef = useRef(null);
 
-  const isPending = false;
-  const isError = false;
+  const { data } = getLoggedUser();
 
-  const data = {
-    profileImg: "/avatars/boy1.png",
-  };
+  const { mutate: post, isPending } = useMutation({
+    mutationKey: ["createPost"],
+    mutationFn: async () => {
+      try {
+        const res = await fetch("/api/post/posts/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text, img }),
+        });
+        if (res.status === 500) {
+          throw new Error("Server Error!!");
+        }
+        if (res.status === 413) {
+          throw new Error("Image size is too large.");
+        }
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.message || data.error);
+        }
+        return data;
+      } catch (error) {
+        throw error;
+      }
+    },
+    onMutate: () => {
+      toast.loading("Posting...", { id: "postToast" });
+    },
+    onSuccess: () => {
+      toast.success("Post created successfully!");
+      setText("");
+      setImg(null);
+      imgRef.current.value = null;
+      setShowEmojiPicker(false);
+      queryClient.invalidateQueries({ queryKey: ["allPosts"] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create post");
+    },
+    onSettled: () => {
+      toast.dismiss("postToast");
+    }
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Post created successfully");
+    !isPending && post();
   };
 
   const handleImgChange = (e) => {
@@ -60,10 +104,13 @@ const CreatePost = () => {
     <div className="flex flex-col p-4 items-start gap-4 border-b border-gray-700">
       <div className="avatar">
         <div className="w-8 rounded-full">
-          <img src={data.profileImg || "/avatar-placeholder.png"} />
+          <img src={data?.data?.profileImg || "/default-profile.jpg"} />
         </div>
       </div>
-      <form className="flex flex-col gap-2 w-full" onSubmit={handleSubmit}>
+      <form
+        className="flex flex-col gap-2 w-full"
+        onSubmit={(e) => handleSubmit(e)}
+      >
         <textarea
           className="textarea w-full p-0 text-lg resize-none border-none focus:outline-none  border-gray-800"
           placeholder="What is happening?!"
@@ -106,11 +153,14 @@ const CreatePost = () => {
             ref={imgRef}
             onChange={handleImgChange}
           />
-          <button className="btn btn-primary rounded-full btn-sm text-white px-4">
-            {isPending ? "Posting..." : "Post"}
+          <button
+            className="btn btn-primary rounded-full btn-sm text-white px-4"
+            type="submit"
+            disabled={isPending}
+          >
+            Post
           </button>
         </div>
-        {isError && <div className="text-red-500">Something went wrong</div>}
       </form>
       {showEmojiPicker && (
         <div className="z-10 self-center">
