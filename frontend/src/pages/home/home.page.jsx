@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import Posts from "../../components/common/posts.jsx";
 import CreatePost from "./create.post.jsx";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 const HomePage = () => {
@@ -29,7 +29,6 @@ const HomePage = () => {
     },
     retry: false,
   });
-  console.log(postsData);
   const { data: followingPostsData, followingIsLoading } = useQuery({
     queryKey: ["followingPosts"],
     queryFn: async () => {

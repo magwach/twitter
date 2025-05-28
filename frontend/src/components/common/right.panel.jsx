@@ -80,7 +80,7 @@ const RightPanel = () => {
             ? "You're already following everyone 🎉"
             : !isLoading &&
               USERS_FOR_RIGHT_PANEL?.map((user) => (
-                <div className="flex">
+                <div className="flex" key={user._id}>
                   <Link
                     to={`/profile/${user.userName}`}
                     className="flex items-center justify-between gap-4"

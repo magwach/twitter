@@ -49,7 +49,7 @@ const ProfilePage = () => {
   });
 
   const { data: myPosts, isLoading: postLoading } = useQuery({
-    queryKey: ["myPosts"],
+    queryKey: ["myPosts", username],
     queryFn: async () => {
       try {
         const res = await fetch(`/api/post/${username}`);
@@ -68,7 +68,7 @@ const ProfilePage = () => {
   });
 
   const { data: likedPosts, isLoading: likedPostsLoading } = useQuery({
-    queryKey: ["likedPosts"],
+    queryKey: ["likedPosts", username],
     queryFn: async () => {
       try {
         const res = await fetch("/api/post/posts/liked");
@@ -365,10 +365,15 @@ const ProfilePage = () => {
           </div>
 
           <div>
-            <Posts
-              posts={feedType === "posts" ? myPosts?.data : likedPosts?.data}
-              loading={postLoading || likedPostsLoading}
-            />
+            {feedType === "posts" && myPosts && (
+              <Posts posts={myPosts?.data} loading={postLoading} />
+            )}
+            {feedType === "likes" && likedPosts && (
+              <Posts
+                posts={likedPosts?.data?.likedPosts}
+                loading={likedPostsLoading}
+              />
+            )}
           </div>
         </div>
       )}
